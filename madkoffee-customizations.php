@@ -241,6 +241,7 @@ final class MadKoffee_Customizations {
 
 	    $this->container['api']         = new MadKoffee\Customizations\Api();
 	    $this->container['assets']      = new MadKoffee\Customizations\Assets();
+	    $this->container['BD']          = new MadKoffee\Customizations\Places\BD();
 	    $this->container['woocommerce'] = new MadKoffee\Customizations\WooCommerce();
     }
 

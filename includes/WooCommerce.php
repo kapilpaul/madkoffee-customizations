@@ -7,6 +7,8 @@
 
 namespace MadKoffee\Customizations;
 
+use MadKoffee\Customizations\Places\BD;
+
 /**
  * Class WooCommerce
  *
@@ -27,7 +29,9 @@ class WooCommerce {
 
 	private function hooks() {
 		add_filter( 'woocommerce_available_payment_gateways' , [ $this, 'maybe_remove_cod' ], 20);
-		add_action( 'woocommerce_before_add_to_cart_quantity' , [ $this, 'add_to_cart' ] );
+		add_filter( 'woocommerce_states', [ $this, 'modify_states_with_ecourier' ] );
+
+		add_action( 'wp_enqueue_scripts', [ $this, 'override_places' ], 20 );
 	}
 
 	/**
@@ -57,13 +61,50 @@ class WooCommerce {
 		return $gateways;
 	}
 
-	public function add_to_cart() {
-		global $post;
+	/**
+	 * Modify woocommerce states with Ecourier data.
+	 *
+	 * @param array $states States.
+	 *
+	 * @return array
+	 */
+	public function modify_states_with_ecourier( $states ) {
+		if (
+			is_plugin_active( 'ship-to-ecourier/ship-to-ecourier.php' ) &&
+			function_exists( 'ship_to_ecourier' )
+		) {
+			$ecourier_cities = ship_to_ecourier()->ecourier->get_city_list();
 
-		$product = wc_get_product( $post->ID );
-		$variations = $product->get_available_variations();
+			if ( is_wp_error( $ecourier_cities ) ) {
+				return $states;
+			}
 
-		//23766 23770
-//		dump( $variations );
+			$cities = [];
+
+			foreach ( $ecourier_cities as $city ) {
+				$cities[ strtolower( $city['value'] ) ] = $city['name'];
+			}
+
+			$states['BD'] = $cities;
+		}
+
+		return $states;
+	}
+
+	/**
+	 * Override places.
+	 *
+	 * @return void
+	 */
+	public function override_places() {
+		if (
+			is_plugin_active( 'ship-to-ecourier/ship-to-ecourier.php' ) &&
+			function_exists( 'ship_to_ecourier' )
+		) {
+			wp_localize_script( 'wc-city-select', 'wc_city_select_params', array(
+				'cities' => wp_json_encode( madkoffee_customizations()->BD->get_places() ),
+				'i18n_select_city_text' => esc_attr__( 'Select an option&hellip;', 'woocommerce' )
+			) );
+		}
 	}
 }
