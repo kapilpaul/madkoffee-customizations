@@ -7,14 +7,36 @@
 
 namespace MadKoffee\Customizations\Places;
 
+/**
+ * Class BD
+ *
+ * @package MadKoffee\Customizations\Places
+ */
 class BD {
 
 	public $places;
 
+	/**
+	 * BD constructor.
+	 */
 	public function __construct() {
 		$this->set_places();
 	}
 
+	/**
+	 * Get places by country.
+	 *
+	 * @return array
+	 */
+	public function get_places_by_country( $code = 'BD' ) {
+		return $this->places[ $code ];
+	}
+
+	/**
+	 * Set Places
+	 *
+	 * @return void
+	 */
 	public function set_places() {
 		$this->places['BD'] = [
 			'dhaka'           => [

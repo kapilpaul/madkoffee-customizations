@@ -32,6 +32,8 @@ class WooCommerce {
 		add_filter( 'woocommerce_states', [ $this, 'modify_states_with_ecourier' ] );
 
 		add_action( 'wp_enqueue_scripts', [ $this, 'override_places' ], 20 );
+
+		add_filter( 'woocommerce_settings_api_form_fields_cod', [ $this, 'set_up_cod_places' ] );
 	}
 
 	/**
@@ -42,18 +44,22 @@ class WooCommerce {
 	 * @return mixed
 	 */
 	public function maybe_remove_cod( $gateways ) {
-		if ( ! is_checkout() ) {
+		if ( ! is_checkout() || 'dhaka' === WC()->customer->get_billing_state() ) {
 			return $gateways;
 		}
 
-		$allowed_places = [
-			'dhaka',
-			'gazipur',
-			'savar',
-			'saver',
-		];
+		$allowed_places = [];
 
-		if( ! in_array( WC()->customer->get_billing_state(), $allowed_places, true ) ){
+		$payment_gateways = WC()->payment_gateways->payment_gateways();
+
+		if ( isset( $payment_gateways['cod'] ) ) {
+			$get_cod_settings = $payment_gateways['cod']->settings;
+			$allowed_places   = $get_cod_settings['enable_places_for_cod'];
+		}
+
+		$billing_city = strtolower( WC()->customer->get_billing_city() );
+
+		if( ! in_array( $billing_city, $allowed_places, true ) ){
 			// then unset the 'cod' key (cod is the unique id of COD Gateway)
 			unset( $gateways['cod'] );
 		}
@@ -106,5 +112,30 @@ class WooCommerce {
 				'i18n_select_city_text' => esc_attr__( 'Select an option&hellip;', 'woocommerce' )
 			) );
 		}
+	}
+
+	/**
+	 * add field for setup cod places.
+	 *
+	 * @param array $fields COD form fields.
+	 *
+	 * @return mixed
+	 */
+	public function set_up_cod_places( $fields ) {
+		$fields['enable_places_for_cod'] = array(
+			'title'             => __( 'Enable Places for COD', 'woocommerce' ),
+			'type'              => 'multiselect',
+			'class'             => 'wc-enhanced-select',
+			'css'               => 'width: 100%;',
+			'default'           => '',
+			'description'       => __( 'COD is only available for certain places, set it up here. Dhaka city will be added by default with every selection.', 'madkoffee-customizations' ),
+			'options'           => madkoffee_customizations()->BD->get_places_by_country(),
+			'desc_tip'          => false,
+			'custom_attributes' => array(
+				'data-placeholder' => __( 'Select shipping methods', 'woocommerce' ),
+			),
+		);
+
+		return $fields;
 	}
 }
