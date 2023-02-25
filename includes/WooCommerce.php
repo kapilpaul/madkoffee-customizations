@@ -34,6 +34,7 @@ class WooCommerce {
 		add_action( 'wp_enqueue_scripts', [ $this, 'override_places' ], 20 );
 
 		add_filter( 'woocommerce_settings_api_form_fields_cod', [ $this, 'set_up_cod_places' ] );
+		add_filter( 'ste_set_shipping_info', [ $this, 'modify_ste_shipping_info' ], 10, 2 );
 	}
 
 	/**
@@ -54,7 +55,7 @@ class WooCommerce {
 
 		if ( isset( $payment_gateways['cod'] ) ) {
 			$get_cod_settings = $payment_gateways['cod']->settings;
-			$allowed_places   = $get_cod_settings['enable_places_for_cod'];
+			$allowed_places   = isset( $get_cod_settings['enable_places_for_cod'] ) ? $get_cod_settings['enable_places_for_cod'] : [];
 		}
 
 		$billing_city = strtolower( WC()->customer->get_billing_city() );
@@ -137,5 +138,18 @@ class WooCommerce {
 		);
 
 		return $fields;
+	}
+
+	/**
+	 * Modify ship to ecourier payment method.
+	 *
+	 * @param array $shipping_info Shipping info.
+	 * @param \WC_Order $order Order data.
+	 *
+	 * @return array
+	 */
+	public function modify_ste_shipping_info( $shipping_info, $order ) {
+		$shipping_info['payment_method'] = 'zitengine_bkash' === $order->get_payment_method() ? 'mpay' : 'cod';
+		return $shipping_info;
 	}
 }
