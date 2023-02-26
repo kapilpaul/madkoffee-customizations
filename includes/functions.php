@@ -1,9 +1,9 @@
 <?php
 /**
  * All our plugins custom functions.
- * 
+ *
  * @since 1.0.0
- */  
+ */
 
 /**
  * Get template part implementation.
@@ -152,4 +152,11 @@ function madkoffee_get_extension( $file_name ) {
   return ( false === $n ) ? '' : substr( $file_name, $n + 1 );
 }
 
-
+/**
+ * Ship to ecourier plugin active or not.
+ *
+ * @return bool
+ */
+function is_ste_plugin_active() {
+	return is_plugin_active( 'ship-to-ecourier/ship-to-ecourier.php' ) && function_exists( 'ship_to_ecourier' );
+}

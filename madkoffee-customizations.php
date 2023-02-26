@@ -153,6 +153,7 @@ final class MadKoffee_Customizations {
         define( 'MADKOFFEE_TEMPLATE_PATH', MADKOFFEE_PATH . '/templates/' );
         define( 'MADKOFFEE_URL', plugins_url( '', MADKOFFEE_FILE ) );
         define( 'MADKOFFEE_ASSETS', MADKOFFEE_URL . '/assets' );
+        define( 'MADKOFFEE_ASSETS_PATH', MADKOFFEE_PATH . '/assets' );
     }
 
     /**
@@ -207,10 +208,6 @@ final class MadKoffee_Customizations {
         if ( $this->is_request( 'frontend' ) ) {
             $this->container['frontend'] = new MadKoffee\Customizations\Frontend();
         }
-
-        if ( $this->is_request( 'ajax' ) ) {
-            // require_once MADKOFFEE_INCLUDES . '/class-ajax.php';
-        }
     }
 
     /**
@@ -236,7 +233,7 @@ final class MadKoffee_Customizations {
      */
     public function init_classes() {
         if ( $this->is_request( 'ajax' ) ) {
-            // $this->container['ajax'] =  new MadKoffee\Customizations\Ajax();
+             $this->container['ajax'] =  new MadKoffee\Customizations\Ajax();
         }
 
 	    $this->container['api']         = new MadKoffee\Customizations\Api();

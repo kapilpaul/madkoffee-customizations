@@ -33,6 +33,16 @@ class BD {
 	}
 
 	/**
+	 * Get places by country.
+	 *
+	 * @return array
+	 */
+	public function get_places_by_area( $area_code, $country_code = 'BD' ) {
+		error_log( 'ccode' . print_r( $area_code, true ) );
+		return $this->places[ $country_code ][ $area_code ];
+	}
+
+	/**
 	 * Set Places
 	 *
 	 * @return void
@@ -2184,6 +2194,18 @@ class BD {
 	 */
 	public function get_places() {
 		return $this->places;
+	}
+
+	public function get_cities( $country_code = 'BD' ) {
+		$cities = array_keys( $this->places[ $country_code ] );
+
+		$city_list = [];
+
+		foreach ( $cities as $city ) {
+			$city_list[ $city ] = ucwords( $city );
+		}
+
+		return $city_list;
 	}
 
 }
