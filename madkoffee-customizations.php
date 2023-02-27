@@ -222,6 +222,13 @@ final class MadKoffee_Customizations {
 
         // Localize our plugin
         add_action( 'init', [ $this, 'localization_setup' ] );
+
+	    add_filter( 'wf_pklist_alter_find_replace', [ \MadKoffee\Customizations\WooCommerce::class, 'update_pklist_fields' ], 10, 3 );
+
+	    add_filter( 'wf_pklist_alter_hide_empty', function ( $hide_on_empty_fields ) {
+		    $hide_on_empty_fields[] = 'wfte_paid_seal_extra_text';
+		    return $hide_on_empty_fields;
+	    } );
     }
 
     /**

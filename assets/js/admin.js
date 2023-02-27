@@ -1,5 +1,5 @@
 ( function ( $, mk ) {
-  const mkCustomizations = {
+  const mkAdminCustomizations = {
     billingState : $( '#_billing_state' ),
     init: function () {
       this.initBillingStateChange();
@@ -13,7 +13,7 @@
         function ( event ) {
           const selectedValue = $( this ).val();
 
-          mkCustomizations.getAreas( selectedValue, '#_billing_city' );
+          mkAdminCustomizations.getAreas( selectedValue, '#_billing_city' );
         } );
     },
 
@@ -24,7 +24,7 @@
         function ( event ) {
           const selectedValue = $( this ).val();
 
-          mkCustomizations.getAreas( selectedValue, '#_shipping_city' );
+          mkAdminCustomizations.getAreas( selectedValue, '#_shipping_city' );
         } );
     },
 
@@ -50,6 +50,6 @@
     }
   };
 
-  mkCustomizations.init();
+  mkAdminCustomizations.init();
 
 } )( jQuery, window.MADKOFFEE_ADMIN );

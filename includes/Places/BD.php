@@ -38,8 +38,11 @@ class BD {
 	 * @return array
 	 */
 	public function get_places_by_area( $area_code, $country_code = 'BD' ) {
-		error_log( 'ccode' . print_r( $area_code, true ) );
-		return $this->places[ $country_code ][ $area_code ];
+		if ( isset( $this->places[ $country_code ] ) && isset( $this->places[ $country_code ][ $area_code ] ) ) {
+			return $this->places[ $country_code ][ $area_code ];
+		}
+
+		return [];
 	}
 
 	/**

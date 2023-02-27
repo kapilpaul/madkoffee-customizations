@@ -27,20 +27,39 @@ class WooCommerce {
 		$this->hooks();
 	}
 
+	/**
+	 * Hooks.
+	 */
 	private function hooks() {
 		/**
 		 * Filters
 		 */
 		add_filter( 'woocommerce_available_payment_gateways' , [ $this, 'maybe_remove_cod' ], 20);
 		add_filter( 'woocommerce_states', [ $this, 'modify_states_with_ecourier' ] );
-		add_filter( 'woocommerce_admin_billing_fields', [ $this, 'modify_billing_admin_fields' ] );
-		add_filter( 'woocommerce_admin_shipping_fields', [ $this, 'modify_shipping_admin_fields' ] );
+		add_filter( 'woocommerce_admin_billing_fields', [ $this, 'modify_billing_admin_fields' ], 20 );
+		add_filter( 'woocommerce_admin_shipping_fields', [ $this, 'modify_shipping_admin_fields' ], 20 );
 		add_filter( 'woocommerce_settings_api_form_fields_cod', [ $this, 'set_up_cod_places' ] );
 		add_filter( 'ste_set_shipping_info', [ $this, 'modify_ste_shipping_info' ], 10, 2 );
+
+		$override_inputs_key = [
+			'billing_first_name',
+			'billing_country',
+			'billing_address_1',
+			'billing_address_2',
+			'billing_state',
+			'billing_city',
+			'billing_postcode',
+			'billing_phone',
+		];
+
+		foreach ( $override_inputs_key as $input ) {
+			add_filter( 'default_checkout_' . $input , [ $this, 'override_default_value' ] );
+		}
 
 		/**
 		 * Actions
 		 */
+		add_action( 'wp_enqueue_scripts', [ $this, 'fe_load_scripts' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'override_places' ], 20 );
 		add_action( 'admin_enqueue_scripts', [ $this, 'load_scripts' ] );
 	}
@@ -55,6 +74,15 @@ class WooCommerce {
 	public function maybe_remove_cod( $gateways ) {
 		if ( ! is_checkout() || 'dhaka' === WC()->customer->get_billing_state() ) {
 			return $gateways;
+		}
+
+		if ( is_user_logged_in() ) {
+			$user  = wp_get_current_user();
+			$roles = ( array ) $user->roles;
+
+			if ( in_array( 'shop_manager', $roles, true ) ) {
+				return $gateways;
+			}
 		}
 
 		$allowed_places = [];
@@ -112,12 +140,14 @@ class WooCommerce {
 	 * @return void
 	 */
 	public function override_places() {
-		if ( is_ste_plugin_active() ) {
-			wp_localize_script( 'wc-city-select', 'wc_city_select_params', array(
-				'cities' => wp_json_encode( madkoffee_customizations()->BD->get_places() ),
-				'i18n_select_city_text' => esc_attr__( 'Select an option&hellip;', 'woocommerce' )
-			) );
+		if ( ! is_ste_plugin_active() ) {
+			return;
 		}
+
+		wp_localize_script( 'wc-city-select', 'wc_city_select_params', array(
+			'cities' => wp_json_encode( madkoffee_customizations()->BD->get_places() ),
+			'i18n_select_city_text' => esc_attr__( 'Select an option&hellip;', 'woocommerce' )
+		) );
 	}
 
 	/**
@@ -184,6 +214,7 @@ class WooCommerce {
 	 * Modify admin billing and shipping fields.
 	 *
 	 * @param $fields
+	 * @param $type
 	 *
 	 * @return array
 	 */
@@ -197,14 +228,16 @@ class WooCommerce {
 		$order = wc_get_order( $post->ID );
 
 		$get_state = "get_{$type}_state";
+		$get_city  = "get_{$type}_city";
 
 		$fields['city'] = [
 			'label'         => __( 'City', 'woocommerce' ),
 			'wrapper_class' => 'form-field-wide',
 			'class'         => 'wc-enhanced-select select short form-field-wide',
-			'options'       => madkoffee_customizations()->BD->get_places_by_area( $order->$get_state() ),
+			'options'       => madkoffee_customizations()->BD->get_places_by_area( strtolower( $order->$get_state() ) ),
 			'type'          => 'select',
 			'show'          => false,
+			'value'         => strtolower( $order->$get_city() ),
 		];
 
 		$temp_fields = $fields;
@@ -214,11 +247,12 @@ class WooCommerce {
 		unset( $fields['city'] );
 
 		$temp_fields['state']     = array(
-			'label' => __( 'State / County', 'woocommerce' ),
-			'class' => 'wc-enhanced-select select short',
-			'show'  => false,
-			'type'  => 'select',
+			'label'   => __( 'State / County', 'woocommerce' ),
+			'class'   => 'wc-enhanced-select select short',
+			'show'    => false,
+			'type'    => 'select',
 			'options' => madkoffee_customizations()->BD->get_cities(),
+			'value'   => strtolower( $order->{$get_state}() ),
 		);
 
 		$fields = $this->rearrange_array( 'address_1', $fields, [
@@ -252,19 +286,75 @@ class WooCommerce {
 	 * load scripts.
 	 */
 	public function load_scripts() {
-		wp_register_style( 'madcoffe-customizations', MADKOFFEE_ASSETS . '/css/admin.css', [], filemtime( MADKOFFEE_ASSETS_PATH . '/css/admin.css' ) );
-		wp_enqueue_style( 'madcoffe-customizations' );
+		wp_register_style( 'madkoffee-customizations', MADKOFFEE_ASSETS . '/css/admin.css', [], filemtime( MADKOFFEE_ASSETS_PATH . '/css/admin.css' ) );
+		wp_enqueue_style( 'madkoffee-customizations' );
 
-		wp_register_script( 'madcoffe-customizations', MADKOFFEE_ASSETS . '/js/admin.js', [ 'jquery' ], filemtime( MADKOFFEE_ASSETS_PATH . '/js/admin.js' ), true );
-		wp_enqueue_script( 'madcoffe-customizations' );
+		wp_register_script( 'madkoffee-customizations', MADKOFFEE_ASSETS . '/js/admin.js', [ 'jquery' ], filemtime( MADKOFFEE_ASSETS_PATH . '/js/admin.js' ), true );
+		wp_enqueue_script( 'madkoffee-customizations' );
 
 		wp_localize_script(
-			'madcoffe-customizations',
+			'madkoffee-customizations',
 			'MADKOFFEE_ADMIN',
 			array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'madkoffee-admin-nonce' ),
 			)
 		);
+	}
+
+	public function fe_load_scripts() {
+		wp_register_style( 'fe-madkoffee-customizations', MADKOFFEE_ASSETS . '/css/mk-customizations.css', [], filemtime( MADKOFFEE_ASSETS_PATH . '/css/mk-customizations.css' ) );
+		wp_enqueue_style( 'fe-madkoffee-customizations' );
+	}
+
+	/**
+	 * Change input value for the shop manager.
+	 *
+	 * @param string $value Value of the input.
+	 *
+	 * @return string
+	 */
+	public function override_default_value( $value ) {
+		if ( ! is_checkout() || ! is_user_logged_in() ) {
+			return $value;
+		}
+
+		if ( is_user_logged_in() ) {
+			$user  = wp_get_current_user();
+			$roles = ( array ) $user->roles;
+
+			if ( in_array( 'shop_manager', $roles, true ) ) {
+				return null;
+			}
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Modify tracking number with Ecourier.
+	 *
+	 * @param array     $find_replace  Find and replace data.
+	 * @param string    $template_type Template type.
+	 * @param \WC_Order $order         Order object.
+	 *
+	 * @return mixed
+	 */
+	public static function update_pklist_fields( $find_replace, $template_type, $order ) {
+		$find_replace['[wfte_paid_seal_extra_text]'] = 'zitengine_bkash' === $order->get_payment_method() ? 'PAID' : '';;
+
+		if ( ! is_ste_plugin_active() ) {
+			return $find_replace;
+		}
+
+		$order_shipped = ste_get_order_shipping_info( $order->get_order_number() );
+
+		if ( ! $order_shipped ) {
+			return $find_replace;
+		}
+
+		$find_replace['[wfte_tracking_number]'] = $order_shipped->tracking_id;
+
+		return $find_replace;
 	}
 }
