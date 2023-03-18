@@ -2,3 +2,54 @@
 	float: left;
 	clear: left;
 }
+
+.wc-madkoffee-page-container {
+	margin-top: 15px;
+	margin-right: 15px;
+}
+
+.wc-madkoffee-page-container .single-metabox {
+	background: #fff;
+	padding: 10px 20px;
+}
+
+.wc-madkoffee-page-container .single-metabox h2 {
+	color: #000;
+	padding-bottom: 10px;
+	border-bottom: 2px solid #eee;
+}
+
+.wc-madkoffee-page-container .single-metabox ul.orders-count-from-sources {
+}
+
+.wc-madkoffee-page-container .single-metabox ul.orders-count-from-sources li {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	justify-content: space-around;
+	border: 1px solid #ddd;
+	border-bottom: 0;
+	margin-bottom: 0;
+}
+
+.wc-madkoffee-page-container .single-metabox ul.orders-count-from-sources li:last-child {
+	border-bottom: 1px solid #ddd;
+}
+
+.wc-madkoffee-page-container .single-metabox ul.orders-count-from-sources li span {
+	border-right: 1px solid #ddd;
+	flex: 1;
+	text-align: center;
+	padding: 8px;
+}
+
+.wc-madkoffee-page-container .single-metabox ul.orders-count-from-sources li span.heading {
+	font-weight: 600;
+}
+
+.wc-madkoffee-page-container .single-metabox ul.orders-count-from-sources li span:last-child {
+	border-right: 0;
+}
+
+
+

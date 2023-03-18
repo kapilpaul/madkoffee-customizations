@@ -7,14 +7,17 @@
 
 namespace MadKoffee\Customizations;
 
-use MadKoffee\Customizations\Places\BD;
-
 /**
  * Class WooCommerce
  *
  * @package MadKoffee\Customizations
  */
 class WooCommerce {
+
+	/**
+	 * @var array
+	 */
+	public $order_sources = [];
 
 	/**
 	 * WC constructor.
@@ -24,6 +27,14 @@ class WooCommerce {
 	 * @return void
 	 */
 	public function __construct() {
+		$this->order_sources = [
+			'direct_website' => 'Direct Website',
+			'facebook'       => 'Facebook',
+			'instagram'      => 'Instagram',
+			'phone_calls'    => 'Phone Calls',
+			'b2b_orders'     => 'B2B orders',
+		];
+
 		$this->hooks();
 	}
 
@@ -40,6 +51,7 @@ class WooCommerce {
 		add_filter( 'woocommerce_admin_shipping_fields', [ $this, 'modify_shipping_admin_fields' ], 20 );
 		add_filter( 'woocommerce_settings_api_form_fields_cod', [ $this, 'set_up_cod_places' ] );
 		add_filter( 'ste_set_shipping_info', [ $this, 'modify_ste_shipping_info' ], 10, 2 );
+		add_filter( 'woocommerce_product_tabs', [ $this, 'add_size_chart_product_tab' ] );
 
 		$override_inputs_key = [
 			'billing_first_name',
@@ -62,6 +74,10 @@ class WooCommerce {
 		add_action( 'wp_enqueue_scripts', [ $this, 'fe_load_scripts' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'override_places' ], 20 );
 		add_action( 'admin_enqueue_scripts', [ $this, 'load_scripts' ] );
+		add_action( 'woocommerce_admin_order_data_after_order_details', [ $this, 'add_order_source_form_in_order' ] );
+		add_action( 'save_post_shop_order', [ $this, 'add_order_source' ] );
+		add_action( 'admin_menu', [ $this, 'add_wc_submenu' ], 20 );
+		add_action( 'woocommerce_single_product_summary', [ $this, 'add_size_chart' ] );
 	}
 
 	/**
@@ -72,9 +88,37 @@ class WooCommerce {
 	 * @return mixed
 	 */
 	public function maybe_remove_cod( $gateways ) {
+//		$user_id = 15;
+//		$orders = wc_get_orders( [
+//			'meta_key'       => '_customer_user',
+//			'meta_value'     => $user_id,
+//			'post_type'      => 'shop_order',
+//			'post_status'    => 'wc-completed',
+//			'posts_per_page' => -1,
+//			'date_query'     => [
+//				[
+//					'after'     => [
+//						'year'  => 2023,
+//						'month' => 1,
+//						'day'   => 1,
+//					],
+//					'before'    => [
+//						'year'  => 2023,
+//						'month' => 2,
+//						'day'   => 28,
+//					],
+//					'inclusive' => true,
+//				],
+//			],
+//		] );
+//
+//		dump( $orders );
+//		exit;
+
 		if ( ! is_checkout() || 'dhaka' === WC()->customer->get_billing_state() ) {
 			return $gateways;
 		}
+
 
 		if ( is_user_logged_in() ) {
 			$user  = wp_get_current_user();
@@ -184,7 +228,15 @@ class WooCommerce {
 	 * @return array
 	 */
 	public function modify_ste_shipping_info( $shipping_info, $order ) {
-		$shipping_info['payment_method'] = 'zitengine_bkash' === $order->get_payment_method() ? 'mpay' : 'cod';
+
+		$shipping_info['payment_method'] = $order->needs_payment() ? 'cod' : 'mpay';
+
+		$deposit_amount = get_post_meta( $order->get_id(), '_wc_deposits_deposit_amount', true );
+
+		if ( $deposit_amount ) {
+			$shipping_info['product_price'] = $order->get_total() - (int) $deposit_amount;
+		}
+
 		return $shipping_info;
 	}
 
@@ -356,5 +408,150 @@ class WooCommerce {
 		$find_replace['[wfte_tracking_number]'] = $order_shipped->tracking_id;
 
 		return $find_replace;
+	}
+
+	/**
+	 * Add order source form in admin order page.
+	 *
+	 * @param \WC_Order $order Order data.
+	 *
+	 * @return void
+	 */
+	public function add_order_source_form_in_order( $order ) {
+		$order_source = get_post_meta( $order->get_id(), 'order_source', true );
+
+		?>
+		<p class="form-field form-field-wide">
+			<label for="order_source">
+				<?php esc_html_e( 'Order Source:', 'madkoffee-customizations' ); ?>
+			</label>
+			<select id="order_source" name="order_source" class="wc-enhanced-select">
+				<?php
+				foreach ( $this->order_sources as $key => $source ) {
+					echo '<option value="' . esc_attr( $key ) . '" ' . selected( $key, $order_source, false ) . '>' . esc_html( $source ) . '</option>';
+				}
+				?>
+			</select>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Add order source metadata.
+	 *
+	 * @param int $post_id Post ID.
+	 *
+	 * @return void
+	 */
+	public function add_order_source( $post_id ) {
+		if ( empty( $_POST['order_source'] ) ) {
+			update_post_meta( $post_id, 'order_source', 'direct_website' );
+			return;
+		}
+
+		$order_source = sanitize_title( $_POST['order_source'] );
+
+		update_post_meta( $post_id, 'order_source', $order_source );
+	}
+
+	/**
+	 * Add submenu in WooCommerce Menu.
+	 *
+	 * @return void
+	 */
+	public function add_wc_submenu() {
+		add_submenu_page(
+			'woocommerce',
+			__( 'MadKoffee', 'madkoffee-customizations' ),
+			__( 'MadKoffee', 'madkoffee-customizations' ),
+			'manage_options',
+			'madkoffee_data_page',
+			array( $this, 'wc_madkoffee_page' )
+		);
+	}
+
+	/**
+	 * MadKoffee page for WC.
+	 *
+	 * @return void
+	 */
+	public function wc_madkoffee_page() {
+		$orders_from_sources = [];
+
+		foreach ( $this->order_sources as $key => $source ) {
+			$args = [
+				'meta_key'       => 'order_source',
+				'meta_value'     => $key,
+				'post_type'      => 'shop_order',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+			];
+
+			$orders = wc_get_orders( $args );
+
+			$orders_from_sources[ $key ]['title']          = $source;
+			$orders_from_sources[ $key ]['lifetime_count'] = count( $orders );
+
+			$args['date_query'] = [
+				[
+					'after'     => [
+						'year'  => date( 'Y' ),
+						'month' => date( 'm' ),
+						'day'   => 1,
+					],
+					'before'    => [
+						'year'  => date( 'Y' ),
+						'month' => date( 'm' ),
+						'day'   => date( 't' ),
+					],
+					'inclusive' => true,
+				],
+			];
+
+			$orders = wc_get_orders( $args );
+
+			$orders_from_sources[ $key ]['monthly_count'] = count( $orders );
+		}
+
+		madkoffee_get_template( 'wc-madkoffee-page', [
+			'orders_from_sources' => $orders_from_sources,
+		] );
+	}
+
+	/**
+	 * Add size chart.
+	 *
+	 * @return void
+	 */
+	public function add_size_chart() {
+		global $post;
+
+		$size_chart_data      = [];
+		$selected_size_charts = get_field( 'product_size_charts', $post->ID );
+
+		foreach ( $selected_size_charts as $selected_size_chart ) {
+			$size_chart_data[ get_the_title( $selected_size_chart ) ] = get_field( 'sizes', $selected_size_chart );
+		}
+
+		madkoffee_get_template( 'size-chart', [
+			'size_chart_data' => $size_chart_data,
+		] );
+	}
+
+	/**
+	 * Add size chart tab in product description.
+	 *
+	 * @param $tabs
+	 *
+	 * @return mixed
+	 */
+	public function add_size_chart_product_tab( $tabs ) {
+		$tabs['size_chart'] = array(
+			'title'     => __( 'Size Chart', 'madkoffee-customizations' ),
+			'priority'  => 10,
+			'callback'  => [ $this, 'add_size_chart' ]
+		);
+
+		return $tabs;
 	}
 }

@@ -247,6 +247,7 @@ final class MadKoffee_Customizations {
 	    $this->container['assets']      = new MadKoffee\Customizations\Assets();
 	    $this->container['BD']          = new MadKoffee\Customizations\Places\BD();
 	    $this->container['woocommerce'] = new MadKoffee\Customizations\WooCommerce();
+	    $this->container['post_types']  = new MadKoffee\Customizations\PostTypes();
     }
 
     /**
