@@ -160,3 +160,24 @@ function madkoffee_get_extension( $file_name ) {
 function is_ste_plugin_active() {
 	return is_plugin_active( 'ship-to-ecourier/ship-to-ecourier.php' ) && function_exists( 'ship_to_ecourier' );
 }
+
+/**
+ * Check whether current environment is production?
+ *
+ * Environment type support has been added in WordPress 5.5 and also support
+ * added to VIP-Go platform environments.
+ *
+ * @see https://make.wordpress.org/core/2020/07/24/new-wp_get_environment_type-function-in-wordpress-5-5/
+ * @see https://lobby.vip.wordpress.com/2020/08/20/environment-type-support/
+ *
+ * @return bool Return true if it's production else return false.
+ */
+function madkoffee_is_production() {
+
+	if ( 'production' === wp_get_environment_type() ) {
+		return true;
+	}
+
+	return false;
+
+}

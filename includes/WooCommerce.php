@@ -529,8 +529,86 @@ class WooCommerce {
 		$size_chart_data      = [];
 		$selected_size_charts = get_field( 'product_size_charts', $post->ID );
 
+		if ( ! $selected_size_charts ) {
+			$size_chart_data['Tshirt'] = [
+				'type'           => 'tshirt',
+				'display_sleeve' => true,
+				'sizes'          => [
+					[
+						'size'   => '2XS',
+						'width'  => '24',
+						'length' => '25',
+						'sleeve' => '7.25',
+					],
+					[
+						'size'   => 'XS',
+						'width'  => '36',
+						'length' => '26',
+						'sleeve' => '7.5',
+					],
+					[
+						'size'   => 'S',
+						'width'  => '37',
+						'length' => '26',
+						'sleeve' => '7.75',
+					],
+					[
+						'size'   => 'M',
+						'width'  => '39',
+						'length' => '27.5',
+						'sleeve' => '8.5',
+					],
+					[
+						'size'   => 'L',
+						'width'  => '40.5',
+						'length' => '28',
+						'sleeve' => '8.75',
+					],
+					[
+						'size'   => 'XL',
+						'width'  => '43',
+						'length' => '29',
+						'sleeve' => '9',
+					],
+					[
+						'size'   => '2XL',
+						'width'  => '45',
+						'length' => '30',
+						'sleeve' => '9.25',
+					],
+					[
+						'size'   => '3XL',
+						'width'  => '47.5',
+						'length' => '30.5',
+						'sleeve' => '9.5',
+					],
+					[
+						'size'   => '4XL',
+						'width'  => '49.5',
+						'length' => '31.5',
+						'sleeve' => '10',
+					],
+					[
+						'size'   => '5XL',
+						'width'  => '51.5',
+						'length' => '32.5',
+						'sleeve' => '11',
+					],
+				],
+			];
+
+			madkoffee_get_template( 'size-chart', [
+				'size_chart_data' => $size_chart_data,
+			] );
+			return;
+		}
+
 		foreach ( $selected_size_charts as $selected_size_chart ) {
-			$size_chart_data[ get_the_title( $selected_size_chart ) ] = get_field( 'sizes', $selected_size_chart );
+			$size_chart_data[ get_the_title( $selected_size_chart ) ] = [
+				'sizes'          => get_field( 'sizes', $selected_size_chart ),
+				'type'           => get_field( 'type', $selected_size_chart ),
+				'display_sleeve' => get_field( 'display_sleeve', $selected_size_chart ),
+			];
 		}
 
 		madkoffee_get_template( 'size-chart', [
