@@ -34,7 +34,10 @@ class ACF {
 
 		}
 
-		add_filter( 'acf/settings/save_json', array( $this, 'acf_json_save_point' ) );
+		add_filter( 'acf/settings/save_json', [ $this, 'acf_json_save_point' ] );
+
+		add_filter( 'acf/settings/load_json', [ $this, 'acf_json_load_point' ] );
+
 	}
 
 	/**
@@ -53,6 +56,21 @@ class ACF {
 		$path = MADKOFFEE_PATH . '/acf-json';
 
 		return $path;
+	}
 
+	/**
+	 * ACF json load point.
+	 *
+	 * @param $paths
+	 *
+	 * @return mixed
+	 */
+	public function acf_json_load_point( $paths ) {
+		// remove original path (optional)
+		unset($paths[0]);
+
+		$paths[] = MADKOFFEE_PATH . '/acf-json';
+
+		return $paths;
 	}
 }

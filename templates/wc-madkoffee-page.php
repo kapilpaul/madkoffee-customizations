@@ -6,25 +6,17 @@
 ?>
 
 <div class="wc-madkoffee-page-container">
+	<div class="loader">
+		<span class="spinner"></span>
+	</div>
+
 	<div class="single-metabox">
 		<h2><?php esc_html_e( 'Reports', 'madkoffee-customizations' ); ?></h2>
 
-		<h4><?php esc_html_e( 'No of Orders from Sources:', 'madkoffee-customizations' ); ?></h4>
+		<?php madkoffee_get_template_part( 'mk-page/order-sources-report' ); ?>
+	</div>
 
-		<ul class="orders-count-from-sources">
-			<li>
-				<span class="heading"><?php esc_html_e( 'Name', 'madkoffee-customizations' ); ?></span>
-				<span class="heading"><?php esc_html_e( 'This Month', 'madkoffee-customizations' ); ?></span>
-				<span class="heading"><?php esc_html_e( 'LifeTime', 'madkoffee-customizations' ); ?></span>
-			</li>
-
-			<?php foreach ( $orders_from_sources as $key => $orders_count ) : ?>
-				<li>
-					<span><?php echo $orders_count['title']; ?></span>
-					<span><?php echo $orders_count['monthly_count']; ?></span>
-					<span><?php echo $orders_count['lifetime_count']; ?></span>
-				</li>
-			<?php endforeach; ?>
-		</ul>
+	<div class="single-metabox">
+		<?php madkoffee_get_template_part( 'mk-page/sales-by-shopmanager' ); ?>
 	</div>
 </div>

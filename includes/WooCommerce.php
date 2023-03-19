@@ -88,37 +88,9 @@ class WooCommerce {
 	 * @return mixed
 	 */
 	public function maybe_remove_cod( $gateways ) {
-//		$user_id = 15;
-//		$orders = wc_get_orders( [
-//			'meta_key'       => '_customer_user',
-//			'meta_value'     => $user_id,
-//			'post_type'      => 'shop_order',
-//			'post_status'    => 'wc-completed',
-//			'posts_per_page' => -1,
-//			'date_query'     => [
-//				[
-//					'after'     => [
-//						'year'  => 2023,
-//						'month' => 1,
-//						'day'   => 1,
-//					],
-//					'before'    => [
-//						'year'  => 2023,
-//						'month' => 2,
-//						'day'   => 28,
-//					],
-//					'inclusive' => true,
-//				],
-//			],
-//		] );
-//
-//		dump( $orders );
-//		exit;
-
 		if ( ! is_checkout() || 'dhaka' === WC()->customer->get_billing_state() ) {
 			return $gateways;
 		}
-
 
 		if ( is_user_logged_in() ) {
 			$user  = wp_get_current_user();
@@ -476,46 +448,7 @@ class WooCommerce {
 	 * @return void
 	 */
 	public function wc_madkoffee_page() {
-		$orders_from_sources = [];
-
-		foreach ( $this->order_sources as $key => $source ) {
-			$args = [
-				'meta_key'       => 'order_source',
-				'meta_value'     => $key,
-				'post_type'      => 'shop_order',
-				'post_status'    => 'any',
-				'posts_per_page' => -1,
-			];
-
-			$orders = wc_get_orders( $args );
-
-			$orders_from_sources[ $key ]['title']          = $source;
-			$orders_from_sources[ $key ]['lifetime_count'] = count( $orders );
-
-			$args['date_query'] = [
-				[
-					'after'     => [
-						'year'  => date( 'Y' ),
-						'month' => date( 'm' ),
-						'day'   => 1,
-					],
-					'before'    => [
-						'year'  => date( 'Y' ),
-						'month' => date( 'm' ),
-						'day'   => date( 't' ),
-					],
-					'inclusive' => true,
-				],
-			];
-
-			$orders = wc_get_orders( $args );
-
-			$orders_from_sources[ $key ]['monthly_count'] = count( $orders );
-		}
-
-		madkoffee_get_template( 'wc-madkoffee-page', [
-			'orders_from_sources' => $orders_from_sources,
-		] );
+		madkoffee_get_template( 'wc-madkoffee-page' );
 	}
 
 	/**
@@ -530,86 +463,104 @@ class WooCommerce {
 		$selected_size_charts = get_field( 'product_size_charts', $post->ID );
 
 		if ( ! $selected_size_charts ) {
-			$size_chart_data['Tshirt'] = [
-				'type'           => 'tshirt',
-				'display_sleeve' => true,
-				'sizes'          => [
-					[
-						'size'   => '2XS',
-						'width'  => '24',
-						'length' => '25',
-						'sleeve' => '7.25',
-					],
-					[
-						'size'   => 'XS',
-						'width'  => '36',
-						'length' => '26',
-						'sleeve' => '7.5',
-					],
-					[
-						'size'   => 'S',
-						'width'  => '37',
-						'length' => '26',
-						'sleeve' => '7.75',
-					],
-					[
-						'size'   => 'M',
-						'width'  => '39',
-						'length' => '27.5',
-						'sleeve' => '8.5',
-					],
-					[
-						'size'   => 'L',
-						'width'  => '40.5',
-						'length' => '28',
-						'sleeve' => '8.75',
-					],
-					[
-						'size'   => 'XL',
-						'width'  => '43',
-						'length' => '29',
-						'sleeve' => '9',
-					],
-					[
-						'size'   => '2XL',
-						'width'  => '45',
-						'length' => '30',
-						'sleeve' => '9.25',
-					],
-					[
-						'size'   => '3XL',
-						'width'  => '47.5',
-						'length' => '30.5',
-						'sleeve' => '9.5',
-					],
-					[
-						'size'   => '4XL',
-						'width'  => '49.5',
-						'length' => '31.5',
-						'sleeve' => '10',
-					],
-					[
-						'size'   => '5XL',
-						'width'  => '51.5',
-						'length' => '32.5',
-						'sleeve' => '11',
-					],
-				],
-			];
-
-			madkoffee_get_template( 'size-chart', [
-				'size_chart_data' => $size_chart_data,
-			] );
+			$this->get_default_sizechart();
 			return;
 		}
 
 		foreach ( $selected_size_charts as $selected_size_chart ) {
+			if ( ! get_post( $selected_size_chart ) ) {
+				continue;
+			}
+
 			$size_chart_data[ get_the_title( $selected_size_chart ) ] = [
 				'sizes'          => get_field( 'sizes', $selected_size_chart ),
 				'type'           => get_field( 'type', $selected_size_chart ),
 				'display_sleeve' => get_field( 'display_sleeve', $selected_size_chart ),
 			];
 		}
+
+		if ( empty( $size_chart_data ) ) {
+			$this->get_default_sizechart();
+			return;
+		}
+
+		madkoffee_get_template( 'size-chart', [
+			'size_chart_data' => $size_chart_data,
+		] );
+	}
+
+	/**
+	 * Get default size chart
+	 *
+	 * @return void.
+	 */
+	public function get_default_sizechart() {
+		$size_chart_data['Tshirt'] = [
+			'type'           => 'tshirt',
+			'display_sleeve' => true,
+			'sizes'          => [
+				[
+					'size'   => '2XS',
+					'width'  => '24',
+					'length' => '25',
+					'sleeve' => '7.25',
+				],
+				[
+					'size'   => 'XS',
+					'width'  => '36',
+					'length' => '26',
+					'sleeve' => '7.5',
+				],
+				[
+					'size'   => 'S',
+					'width'  => '37',
+					'length' => '26',
+					'sleeve' => '7.75',
+				],
+				[
+					'size'   => 'M',
+					'width'  => '39',
+					'length' => '27.5',
+					'sleeve' => '8.5',
+				],
+				[
+					'size'   => 'L',
+					'width'  => '40.5',
+					'length' => '28',
+					'sleeve' => '8.75',
+				],
+				[
+					'size'   => 'XL',
+					'width'  => '43',
+					'length' => '29',
+					'sleeve' => '9',
+				],
+				[
+					'size'   => '2XL',
+					'width'  => '45',
+					'length' => '30',
+					'sleeve' => '9.25',
+				],
+				[
+					'size'   => '3XL',
+					'width'  => '47.5',
+					'length' => '30.5',
+					'sleeve' => '9.5',
+				],
+				[
+					'size'   => '4XL',
+					'width'  => '49.5',
+					'length' => '31.5',
+					'sleeve' => '10',
+				],
+				[
+					'size'   => '5XL',
+					'width'  => '51.5',
+					'length' => '32.5',
+					'sleeve' => '11',
+				],
+			],
+		];
 
 		madkoffee_get_template( 'size-chart', [
 			'size_chart_data' => $size_chart_data,
